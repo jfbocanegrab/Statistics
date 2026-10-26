@@ -1,0 +1,43 @@
+# Plantilla procesada por envsubst al arrancar el contenedor (script 20-envsubst-on-templates.sh de la
+# imagen NGINX): solo se reemplazan variables de entorno DEFINIDAS (${BACKEND_URL}, ${MAX_UPLOAD_MB});
+# las variables propias de NGINX ($uri, $host...) quedan intactas.
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    # Alineado con MAX_UPLOAD_MB del backend y con la anotación proxy-body-size del Ingress
+    client_max_body_size ${MAX_UPLOAD_MB}m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # La generación del PDF puede tardar; igual o menor que harakiri de uWSGI (120 s)
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_request_buffering on;
+    }
+
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA: cualquier otra ruta devuelve index.html (sin caché para tomar nuevas versiones)
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}

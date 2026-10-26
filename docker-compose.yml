@@ -1,0 +1,17 @@
+# Desarrollo / prueba local:  docker compose up --build  ->  http://localhost:8080
+services:
+  backend:
+    build: ./backend
+    image: statgraph-backend:local
+    environment:
+      MAX_UPLOAD_MB: "50"
+  frontend:
+    build: ./frontend
+    image: statgraph-frontend:local
+    environment:
+      BACKEND_URL: http://backend:8000
+      MAX_UPLOAD_MB: "50"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend

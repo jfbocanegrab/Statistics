@@ -1,0 +1,26 @@
+# ⚠ VERIFICAR con el equipo de plataforma antes del primer despliegue:
+#   - ingressClassName real del cluster RKE (ingress-nginx -> "nginx"; si es Traefik estas anotaciones no aplican)
+#   - Las anotaciones de abajo son de ingress-nginx. Sin proxy-body-size el Ingress corta las subidas a 1 MB (413).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: statgraph
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"     # = MAX_UPLOAD_MB
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"  # = harakiri uWSGI / proxy_read_timeout
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [HOST_PLACEHOLDER]
+      secretName: statgraph-tls
+  rules:
+    - host: HOST_PLACEHOLDER
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: statgraph-frontend
+                port: { name: http }

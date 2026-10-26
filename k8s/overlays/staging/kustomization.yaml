@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: statgraph-staging
+resources:
+  - ../../base
+
+images:
+  # ⚠ Ajustar al registry real (p. ej. el de git.netsf.fr)
+  - name: statgraph-backend
+    newName: REGISTRY_PLACEHOLDER/statgraph/backend
+    newTag: "staging"
+  - name: statgraph-frontend
+    newName: REGISTRY_PLACEHOLDER/statgraph/frontend
+    newTag: "staging"
+replicas:
+  - { name: statgraph-backend, count: 1 }
+  - { name: statgraph-frontend, count: 1 }
+patches:
+  # ⚠ Confirmar el hostname DNS de este entorno
+  - target: { kind: Ingress, name: statgraph }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: statgraph-staging.netsf.fr
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: statgraph-staging.netsf.fr
